@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Vending Machine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <main class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">📦</span>
+                <h1>SmartVending</h1>
+            </div>
+            <p class="subtitle">Raspberry Pi Powered Dispenser</p>
+        </header>
+
+        <section class="card">
+            <div class="status-indicator">
+                <div class="dot green"></div>
+                <span>System Ready</span>
+            </div>
+
+            <div id="items-grid" class="items-grid">
+                <!-- Items will be injected here or hardcoded -->
+                <div class="item-card" data-id="chips">
+                    <div class="item-icon">🍟</div>
+                    <h3>Chips</h3>
+                    <button class="btn-dispense" data-id="chips">Dispense</button>
+                </div>
+                <div class="item-card" data-id="biscuit">
+                    <div class="item-icon">🍪</div>
+                    <h3>Biscuits</h3>
+                    <button class="btn-dispense" data-id="biscuit">Dispense</button>
+                </div>
+                <div class="item-card" data-id="soda">
+                    <div class="item-icon">🥤</div>
+                    <h3>Soda</h3>
+                    <button class="btn-dispense" data-id="soda">Dispense</button>
+                </div>
+                <div class="item-card" data-id="chocolate">
+                    <div class="item-icon">🍫</div>
+                    <h3>Chocolate</h3>
+                    <button class="btn-dispense" data-id="chocolate">Dispense</button>
+                </div>
+            </div>
+
+            <div id="message-area" class="message-area hidden"></div>
+        </section>
+
+        <footer class="footer">
+            <p>&copy; 2026 College Project | RPi 4 Model B</p>
+        </footer>
+    </main>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
