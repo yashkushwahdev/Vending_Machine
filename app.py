@@ -7,7 +7,6 @@ from flask_cors import CORS
 try:
     from gpiozero import Motor
     from gpiozero.pins.pigpio import PiGPIOFactory
-    
     GPIO_AVAILABLE = True
 except (ImportError, RuntimeError):
     GPIO_AVAILABLE = False
@@ -30,7 +29,7 @@ ITEMS = {
     "chocolate": {"name": "Chocolate", "pin1": 25, "pin2": 5, "icon": "🍫", "price": 20}
 }
 
-ROTATION_TIME = 2.0   # Time in seconds the DC motor needs to be ON to drop the item (Adjust as needed for your coil)
+ROTATION_TIME = 2.0   # Time in seconds the DC motor needs to be ON to drop the item
 DEBOUNCE_TIME = 2.0   # Seconds between dispenses
 
 # State
@@ -59,8 +58,10 @@ if GPIO_AVAILABLE:
 def index():
     return render_template('index.html')
 
-@app.route('/api/create_order', methods=['POST'])
-def create_order():
+@app.route('/api/dispense', methods=['POST'])
+def dispense_item():
+    global last_dispense_time
+    
     data = request.get_json()
     item_id = data.get('item_id')
     quantity = int(data.get('quantity', 1))
@@ -70,35 +71,7 @@ def create_order():
     if quantity < 1 or quantity > 2:
         return jsonify({"status": "error", "message": "Invalid quantity."}), 400
 
-    amount = ITEMS[item_id]['price'] * quantity
-
-    # Mock order creation for Paytm review process
-    return jsonify({
-        "status": "success", 
-        "order_id": f"paytm_mock_order_{int(time.time())}", 
-        "amount": amount,
-        "name": ITEMS[item_id]['name'],
-        "quantity": quantity
-    })
-
-@app.route('/api/verify_payment', methods=['POST'])
-def verify_payment():
-    global last_dispense_time
-    
-    data = request.get_json()
-    item_id = data.get('item_id')
-    quantity = int(data.get('quantity', 1))
-    
-    # Bypassing signature verification for Paytm review simulation
-    # The actual Paytm verification logic will go here later.
-
-    # Payment verified! Proceed to dispense.
-    current_time = time.time()
-    
-    # Optional Debounce Check: Kept to prevent concurrent hardware overlap.
-    last_dispense_time = current_time
-
-    # 2. Trigger Motor
+    # Trigger Motor
     success = False
     error_msg = ""
     
@@ -130,20 +103,32 @@ def verify_payment():
 
     if success:
         last_dispense_time = time.time()
-        logging.info(f"Item {item_id} dispensed successfully.")
+        logging.info(f"Item {item_id} dispensed successfully ({quantity} times).")
         return jsonify({
             "status": "success",
-            "message": f"Payment successful! {ITEMS[item_id]['name']} dispensed!"
+            "message": f"Success! {quantity}x {ITEMS[item_id]['name']} dispensed!"
         })
     else:
         return jsonify({
             "status": "error",
-            "message": f"Payment accepted, but hardware error occurred: {error_msg}. Please contact support."
+            "message": f"Hardware error occurred: {error_msg}. Please contact support."
         }), 500
 
 @app.route('/api/items')
 def get_items():
     return jsonify(ITEMS)
+
+@app.route('/about-us')
+def about_us():
+    return render_template('about.html')
+
+@app.route('/contact-us')
+def contact_us():
+    return render_template('contact.html')
+
+@app.route('/checkout-flow')
+def checkout_flow():
+    return render_template('checkout_flow.html')
 
 @app.route('/privacy-policy')
 def privacy_policy():

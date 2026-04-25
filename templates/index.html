@@ -29,7 +29,6 @@
             </div>
 
             <div id="items-grid" class="items-grid kiosk-grid">
-                <!-- Items -->
                 <div class="item-card kiosk-item" data-id="chips" data-name="Chips" data-price="10" data-icon="🥔">
                     <div class="item-check hidden">✔️</div>
                     <div class="item-icon">🥔</div>
@@ -61,9 +60,12 @@
 
         <footer class="footer compliance-footer">
             <div class="compliance-links">
-                <a href="/privacy-policy" target="_blank">Privacy Policy</a> | 
-                <a href="/terms" target="_blank">Terms & Conditions</a> | 
-                <a href="/refund-policy" target="_blank">Refund Policy</a>
+                <a href="/about-us">About Us</a> | 
+                <a href="/contact-us">Contact Us</a> | 
+                <a href="/checkout-flow">Checkout Flow</a> | 
+                <a href="/privacy-policy">Privacy Policy</a> | 
+                <a href="/terms">Terms</a> | 
+                <a href="/refund-policy">Refund</a>
             </div>
             <p style="margin-top: 10px; font-size: 0.8rem; color: #999;">&copy; 2026 College Project | RPi 4 Model B</p>
         </footer>
@@ -93,6 +95,13 @@
                     I agree to the <a href="/privacy-policy" target="_blank">Privacy Policy</a>, <a href="/terms" target="_blank">Terms</a>, and <a href="/refund-policy" target="_blank">Refund Policy</a>
                 </label>
             </div>
+            <div class="payment-method-badge">
+                <div class="payment-method-top">
+                    <span class="payment-lock-icon">🔒</span>
+                    <span class="payment-method-title">Pay securely using Paytm / UPI</span>
+                </div>
+                <p class="payment-method-sub">Supports Paytm, Google Pay, PhonePe</p>
+            </div>
             <button id="btn-checkout" class="btn-checkout">
                 <span class="checkout-text">Pay Total</span>
                 <span id="cart-total" class="checkout-total">₹10</span>
@@ -109,7 +118,6 @@
         </div>
     </div>
 
-    <!-- Paytm scripts will be injected here after approval -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

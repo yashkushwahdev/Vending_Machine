@@ -110,84 +110,48 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCartUI();
     });
 
-    // Checkout Flow
+    // Direct Dispense Flow
     btnCheckout.addEventListener('click', async () => {
         if (isProcessing || !currentItem) return;
         
         const termsCheckbox = document.getElementById('terms-checkbox');
         if (!termsCheckbox.checked) {
-            alert("Please agree to the Privacy Policy, Terms & Conditions, and Refund Policy before making a payment.");
+            alert("Please agree to the Privacy Policy, Terms & Conditions, and Refund Policy before proceeding.");
             return;
         }
 
         isProcessing = true;
-        setOverlayState('loading', 'Creating Order...', 'Please wait');
+        setOverlayState('dispensing', 'Dispensing...', `Dropping ${currentQty}x ${currentItem.name}`);
 
         try {
-            // 1. Create Order
-            const orderRes = await fetch('/api/create_order', {
+            const dispensePromise = fetch('/api/dispense', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ item_id: currentItem.id, quantity: currentQty })
             });
 
-            const orderData = await orderRes.json();
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT')), 15000);
+            });
 
-            if (!orderRes.ok || orderData.status !== 'success') {
-                throw new Error(orderData.message || 'Failed to create order.');
+            const response = await Promise.race([dispensePromise, timeoutPromise]);
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                setOverlayState('success', 'Please collect your items', 'Thank you for your purchase!');
+                setTimeout(() => {
+                    isProcessing = false;
+                    currentItem = null;
+                    updateCartUI();
+                    setOverlayState('hidden');
+                }, 4000);
+            } else {
+                throw new Error(data.message || 'Dispense failed.');
             }
-
-            setOverlayState('loading', 'Connecting to Paytm...', 'Secure gateway loading');
-
-            // Simulate the Paytm interaction
-            setTimeout(async () => {
-                setOverlayState('loading', 'Processing payment...', 'Verifying securely with backend');
-                
-                // 3. Verify Payment Mock (Bypass real signature check in app.py)
-                const verifyPromise = fetch('/api/verify_payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        item_id: currentItem.id,
-                        quantity: currentQty
-                    })
-                });
-
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('TIMEOUT')), 15000);
-                });
-
-                try {
-                    const verifyRes = await Promise.race([verifyPromise, timeoutPromise]);
-                    const verifyData = await verifyRes.json();
-                    
-                    if (verifyRes.ok && verifyData.status === 'success') {
-                        setOverlayState('dispensing', 'Payment successful!', `Dispensing ${currentQty} items...`);
-                        setTimeout(() => {
-                            setOverlayState('success', 'Please collect your items', 'Thank you for your purchase!');
-                            setTimeout(() => {
-                                isProcessing = false;
-                                currentItem = null;
-                                updateCartUI();
-                                setOverlayState('hidden');
-                            }, 4000);
-                        }, currentQty * 3000); 
-                    } else {
-                        throw new Error(verifyData.message || 'Verification failed.');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    setOverlayState('error', 'Payment verification failed', err.message === 'TIMEOUT' ? 'Taking too long.' : 'Please contact support.');
-                    setTimeout(() => {
-                        isProcessing = false;
-                        setOverlayState('hidden');
-                    }, 5000);
-                }
-            }, 2500); // 2.5 second simulated delay for Paytm modal
 
         } catch (error) {
             console.error('Error:', error);
-            setOverlayState('error', 'Connection Error', error.message);
+            setOverlayState('error', 'Dispense Error', error.message === 'TIMEOUT' ? 'Hardware took too long to respond.' : error.message);
             setTimeout(() => {
                 isProcessing = false;
                 setOverlayState('hidden');

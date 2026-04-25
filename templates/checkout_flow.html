@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Checkout Flow - Smart Vending Machine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="policy-page">
+    <div class="kiosk-bg"></div>
+    <div class="container policy-container">
+        <div class="policy-content">
+            <a href="/" class="btn-back">← Back to Machine</a>
+            
+            <h1>Payment Checkout Flow</h1>
+            <p>Our purchasing process is designed to be simple and secure. Here is how it works:</p>
+            
+            <div class="contact-card" style="border-left: 4px solid var(--primary);">
+                <ul style="list-style-type: decimal; padding-left: 20px;">
+                    <li><strong>Product Selection:</strong> User selects a product from the website or vending interface.</li>
+                    <li><strong>Payment Display:</strong> The system displays the payment option (QR / UPI / gateway).</li>
+                    <li><strong>Payment Completion:</strong> User completes the payment using their preferred method.</li>
+                    <li><strong>Payment Verification:</strong> Payment is verified through the payment gateway.</li>
+                    <li><strong>Dispensing:</strong> Upon successful payment, the vending machine dispenses the selected product.</li>
+                </ul>
+            </div>
+            
+            <p style="margin-top: 20px;">In case of payment failure or product not being dispensed, users can contact support for assistance or refund at <a href="mailto:sudhanshupatel517@gmail.com">sudhanshupatel517@gmail.com</a>.</p>
+        </div>
+
+        <footer class="footer compliance-footer">
+            <a href="/about-us">About Us</a> | 
+            <a href="/contact-us">Contact Us</a> | 
+            <a href="/checkout-flow">Checkout Flow</a> | 
+            <a href="/privacy-policy">Privacy Policy</a> | 
+            <a href="/terms">Terms</a> | 
+            <a href="/refund-policy">Refund</a>
+        </footer>
+    </div>
+</body>
+</html>
