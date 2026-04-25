@@ -1,12 +1,11 @@
 import time
 import logging
-import razorpay
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 
 # Optional: GPIO import with fallback for testing on non-RPi systems
 try:
-    from gpiozero import OutputDevice
+    from gpiozero import Motor
     from gpiozero.pins.pigpio import PiGPIOFactory
     
     GPIO_AVAILABLE = True
@@ -16,22 +15,19 @@ except (ImportError, RuntimeError):
 
 app = Flask(__name__)
 CORS(app)
+
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_Sf2YjSGmPfl2H0")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "iytY9Kziycer3Ne7POV7O0af")
-razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
-
 # Configuration
-# Mapping of Item ID -> GPIO Pin
+# Mapping of Item ID -> GPIO Pins (IN1, IN2)
 ITEMS = {
-    "chips": {"name": "Chips", "pin": 18, "icon": "🍟", "price": 10},
-    "biscuit": {"name": "Biscuits", "pin": 23, "icon": "🍪", "price": 10},
-    "soda": {"name": "Soda", "pin": 24, "icon": "🥤", "price": 40},
-    "chocolate": {"name": "Chocolate", "pin": 25, "icon": "🍫", "price": 20}
+    "chips": {"name": "Chips", "pin1": 18, "pin2": 17, "icon": "🥔", "price": 10},
+    "biscuit": {"name": "Biscuits", "pin1": 23, "pin2": 27, "icon": "🍪", "price": 10},
+    "soda": {"name": "Soda", "pin1": 24, "pin2": 22, "icon": "🥤", "price": 40},
+    "chocolate": {"name": "Chocolate", "pin1": 25, "pin2": 5, "icon": "🍫", "price": 20}
 }
 
 ROTATION_TIME = 2.0   # Time in seconds the DC motor needs to be ON to drop the item (Adjust as needed for your coil)
@@ -53,9 +49,8 @@ if GPIO_AVAILABLE:
     try:
         factory = PiGPIOFactory()
         for item_id, info in ITEMS.items():
-            # Configured for single-pin DC motor control via L298 (IN1 to GPIO pin, IN2 to GND, ENA active)
-            motors[item_id] = OutputDevice(info['pin'], pin_factory=factory)
-            motors[item_id].off() # Ensure motor is initially stopped
+            motors[item_id] = Motor(forward=info['pin1'], backward=info['pin2'], pin_factory=factory)
+            motors[item_id].stop()
     except Exception as e:
         print(f"Error initializing motors: {e}")
         GPIO_AVAILABLE = False
@@ -68,27 +63,23 @@ def index():
 def create_order():
     data = request.get_json()
     item_id = data.get('item_id')
+    quantity = int(data.get('quantity', 1))
     
     if item_id not in ITEMS:
         return jsonify({"status": "error", "message": "Invalid item selected."}), 400
+    if quantity < 1 or quantity > 2:
+        return jsonify({"status": "error", "message": "Invalid quantity."}), 400
 
-    amount = ITEMS[item_id]['price'] * 100 # Razorpay takes amount in paise
+    amount = ITEMS[item_id]['price'] * quantity
 
-    try:
-        order = razorpay_client.order.create({
-            "amount": amount,
-            "currency": "INR",
-            "payment_capture": "1"
-        })
-        return jsonify({
-            "status": "success", 
-            "order_id": order['id'], 
-            "amount": amount,
-            "key": RAZORPAY_KEY_ID,
-            "name": ITEMS[item_id]['name']
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    # Mock order creation for Paytm review process
+    return jsonify({
+        "status": "success", 
+        "order_id": f"paytm_mock_order_{int(time.time())}", 
+        "amount": amount,
+        "name": ITEMS[item_id]['name'],
+        "quantity": quantity
+    })
 
 @app.route('/api/verify_payment', methods=['POST'])
 def verify_payment():
@@ -96,19 +87,10 @@ def verify_payment():
     
     data = request.get_json()
     item_id = data.get('item_id')
-    razorpay_payment_id = data.get('razorpay_payment_id')
-    razorpay_order_id = data.get('razorpay_order_id')
-    razorpay_signature = data.get('razorpay_signature')
+    quantity = int(data.get('quantity', 1))
     
-    # 1. Verify Payment Signature
-    try:
-        razorpay_client.utility.verify_payment_signature({
-            'razorpay_order_id': razorpay_order_id,
-            'razorpay_payment_id': razorpay_payment_id,
-            'razorpay_signature': razorpay_signature
-        })
-    except razorpay.errors.SignatureVerificationError:
-        return jsonify({"status": "error", "message": "Payment verification failed."}), 400
+    # Bypassing signature verification for Paytm review simulation
+    # The actual Paytm verification logic will go here later.
 
     # Payment verified! Proceed to dispense.
     current_time = time.time()
@@ -123,18 +105,23 @@ def verify_payment():
     try:
         if GPIO_AVAILABLE and item_id in motors:
             motor = motors[item_id]
-            try:
-                # Turn motor ON
-                motor.on()
-                time.sleep(ROTATION_TIME)
-            finally:
-                # Turn motor OFF safely
-                motor.off()
+            for i in range(quantity):
+                try:
+                    motor.forward()
+                    time.sleep(ROTATION_TIME)
+                finally:
+                    motor.stop()
+                
+                if i < quantity - 1:
+                    time.sleep(1.0) # Delay between multi-drops
             success = True
         else:
             # Mock behavior for local testing
-            print(f"[MOCK] Payment Verified! DC Motor on Pin {ITEMS[item_id]['pin']} turned ON for {ROTATION_TIME}s")
-            time.sleep(ROTATION_TIME)
+            for i in range(quantity):
+                print(f"[MOCK] DC Motor on Pins ({ITEMS[item_id]['pin1']}, {ITEMS[item_id]['pin2']}) moving forward for {ROTATION_TIME}s")
+                time.sleep(ROTATION_TIME)
+                if i < quantity - 1:
+                    time.sleep(1.0)
             success = True
             
     except Exception as e:
@@ -143,7 +130,7 @@ def verify_payment():
 
     if success:
         last_dispense_time = time.time()
-        logging.info(f"Item {item_id} dispensed successfully after payment {razorpay_payment_id}.")
+        logging.info(f"Item {item_id} dispensed successfully.")
         return jsonify({
             "status": "success",
             "message": f"Payment successful! {ITEMS[item_id]['name']} dispensed!"
@@ -157,6 +144,18 @@ def verify_payment():
 @app.route('/api/items')
 def get_items():
     return jsonify(ITEMS)
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy.html')
+
+@app.route('/refund-policy')
+def refund_policy():
+    return render_template('refund.html')
+
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
 
 if __name__ == '__main__':
     # Hosted on 0.0.0.0 to be accessible on the local network via QR code
